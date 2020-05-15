@@ -1,114 +1,79 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
-
 import React from 'react';
-import {
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  StatusBar,
-} from 'react-native';
+import { YellowBox, View, Text, Platform } from 'react-native';
+// 1. Import the modules.
+import BackgroundFetch from 'react-native-background-fetch';
+import PushNotification from 'react-native-push-notification';
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+export default class App extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    YellowBox.ignoreWarnings(['Warning:']);//ignore yellow box messages that starts with "Wraning:"
+    console.disableYellowBox = true;
+    //scheduleNextPrayer();
+    //backgroundServiceForAlarams();
+  }
 
-const App: () => React$Node = () => {
-  return (
-    <>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
-            </View>
-          )}
-          <View style={styles.body}>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
-              <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.js</Text> to change this
-                screen and then come back to see your edits.
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
-  );
+  componentDidMount = async () => {
+    // Push notifications setup (recommend extracting into separate file)
+    PushNotification.configure({
+      // onNotification is called when a notification is to be emitted
+      onNotification: notification => console.log(notification),
+
+      // Permissions to register for iOS
+      permissions: {
+        alert: true,
+        badge: true,
+        sound: true,
+      },
+      popInitialNotification: true,
+      requestPermissions: Platform.OS === 'ios'
+    });
+
+    // Background fetch setup (recommend extracting into separate file)
+    BackgroundFetch.configure(
+      {
+        minimumFetchInterval: 20, // fetch interval in minutes
+        forceAlarmManager: true, // <-- Set true to bypass JobScheduler.
+        stopOnTerminate: false,
+        enableHeadless:true,
+        startOnBoot: true,
+        requiredNetworkType: BackgroundFetch.NETWORK_TYPE_ANY, // Default
+        requiresCharging: false, // Default
+        requiresDeviceIdle: false, // Default
+        requiresBatteryNotLow: false, // Default
+        requiresStorageNotLow: false, // Default
+      },
+      async taskId => {
+        console.log('Received background-fetch event: ', taskId);
+        //alert("I was called");
+        // 3. Insert code you want to run in the background, for example:
+        const result = await awaitableResult();
+
+        if (result) {
+          // 4. Send a push notification
+          PushNotification.localNotification({
+            title: 'Test',
+            message: 'Test',
+            playSound: true,
+            soundName: 'default',
+          });
+        }
+
+        // Call finish upon completion of the background task
+        BackgroundFetch.finish(taskId);
+      },
+      error => {
+        console.error('RNBackgroundFetch failed to start.');
+      },
+    );
+
+  }
+
+  render() {
+    return (<View><Text>Hello</Text></View>);
+  }
+}
+
+export const awaitableResult = () => {
+  return Promise.resolve(true);
 };
-
-const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: Colors.lighter,
-  },
-  engine: {
-    position: 'absolute',
-    right: 0,
-  },
-  body: {
-    backgroundColor: Colors.white,
-  },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
-  },
-});
-
-export default App;
